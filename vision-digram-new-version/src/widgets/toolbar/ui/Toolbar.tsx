@@ -5,6 +5,7 @@ interface ToolbarProps {
   connectFrom: ConnectState;
   selectedId: string | null;
   showAI: boolean;
+  pendingType: ShapeType | null;
   onAddShape: (type: ShapeType) => void;
   onToggleConnect: () => void;
   onDelete: () => void;
@@ -36,7 +37,7 @@ const btn = (active = false, danger = false): React.CSSProperties => ({
 });
 
 export function Toolbar({
-  connectFrom, selectedId, showAI,
+  connectFrom, selectedId, showAI, pendingType,
   onAddShape, onToggleConnect, onDelete, onToggleAI, onExport,
 }: ToolbarProps) {
   return (
@@ -50,17 +51,36 @@ export function Toolbar({
         ◈ Vision-Diagram
       </span>
 
-      {SHAPES.map(({ type, icon, label }) => (
-        <button
-          key={type}
-          onClick={() => onAddShape(type)}
-          style={btn()}
-          onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor="#10b981"; b.style.color="#10b981"; }}
-          onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
-        >
-          {icon} {label}
-        </button>
-      ))}
+      {SHAPES.map(({ type, icon, label }) => {
+        const isActive = pendingType === type;
+        return (
+          <button
+            key={type}
+            onClick={() => onAddShape(type)}
+            style={btn(isActive)}
+            title={isActive ? `Click on canvas to place ${label} (Esc to cancel)` : `Place ${label}`}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                const b = e.currentTarget;
+                b.style.borderColor = "#10b981";
+                b.style.color = "#10b981";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                const b = e.currentTarget;
+                b.style.borderColor = "#374151";
+                b.style.color = "#9ca3af";
+              }
+            }}
+          >
+            {icon} {label}
+            {isActive && (
+              <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 2 }}>●</span>
+            )}
+          </button>
+        );
+      })}
 
       <div style={{ width: 1, height: 24, background: "#1f2937", margin: "0 4px" }} />
 
@@ -72,19 +92,26 @@ export function Toolbar({
         <button onClick={onDelete} style={btn(false, true)}>✕ delete</button>
       )}
 
+      {/* Hint when in placement mode */}
+      {pendingType && (
+        <span style={{
+          fontSize: 10, color: "#6ee7b7", fontFamily: "'JetBrains Mono', monospace",
+          opacity: 0.8, marginLeft: 4,
+        }}>
+          click on canvas · Esc to cancel
+        </span>
+      )}
+
       <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-        <button
-          onClick={onToggleAI}
-          style={btn(showAI)}
-        >
+        <button onClick={onToggleAI} style={btn(showAI)}>
           <span style={{ fontSize: 14 }}>✦</span> AI
         </button>
 
         <button
           onClick={onExport}
           style={btn()}
-          onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor="#6366f1"; b.style.color="#818cf8"; }}
-          onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
+          onMouseEnter={(e) => { const b = e.currentTarget; b.style.borderColor="#6366f1"; b.style.color="#818cf8"; }}
+          onMouseLeave={(e) => { const b = e.currentTarget; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
         >
           ↓ .drawio
         </button>

@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import type { ShapeType } from "../../shared/types/diagram";
 import type { ConnectState } from "../../features/connect-mode";
-import type { TextStyle } from "../../shared/store/diagramStore";
 
 import { useDiagramStore } from "../../shared/store/diagramStore";
 import { DEFAULT_TEXT_STYLE } from "../../shared/store/diagramStore";
@@ -15,8 +14,8 @@ import { StatusBar } from "../../widgets/status-bar";
 function defaultShapeProps(type: ShapeType) {
   const base = {
     type,
-    x: 3 + Math.floor(Math.random() * 6),
-    y: 3 + Math.floor(Math.random() * 4),
+    x: 0,
+    y: 0,
     rotation: 0,
     items: [] as string[],
     rows: 3, cols: 3,
@@ -42,36 +41,39 @@ export function EditorPage() {
   const addEdge     = useDiagramStore((s) => s.addEdge);
   const loadDiagram = useDiagramStore((s) => s.loadDiagram);
 
-  const [selectedId,   setSelectedId]   = useState<string | null>(null);
-  const [connectFrom,  setConnectFrom]  = useState<ConnectState>(null);
-  const [showAI,       setShowAI]       = useState(false);
-  const [pan,          setPan]          = useState({ x: 0, y: 0 });
+  const [selectedId,   setSelectedId]  = useState<string | null>(null);
+  const [connectFrom,  setConnectFrom] = useState<ConnectState>(null);
+  const [showAI,       setShowAI]      = useState(false);
+  const [pan,          setPan]         = useState({ x: 0, y: 0 });
+  const [zoom,         setZoom]        = useState(1);
+  // Placement mode: null = normal, ShapeType = waiting for canvas click
+  const [pendingType,  setPendingType] = useState<ShapeType | null>(null);
 
   // Text format toolbar state
   const [editingShapeId, setEditingShapeId] = useState<string | null>(null);
-  const [toolbarAnchor,  setToolbarAnchor]  = useState<{ x: number; y: number } | null>(null);
 
   const handleEditStart = useCallback((shapeId: string, anchor: { x: number; y: number }) => {
     setEditingShapeId(shapeId);
-    setToolbarAnchor(anchor);
+    void anchor; // anchor available for future format-toolbar use
   }, []);
 
   const handleEditEnd = useCallback(() => {
     setEditingShapeId(null);
-    setToolbarAnchor(null);
-  }, []);
+    void editingShapeId;
+  }, [editingShapeId]);
 
-  const handleTextStyleChange = useCallback((patch: Partial<TextStyle>) => {
-    if (!editingShapeId) return;
-    const shape = shapes.find((s) => s.id === editingShapeId);
-    if (!shape) return;
-    const merged = { ...DEFAULT_TEXT_STYLE, ...shape.textStyle, ...patch };
-    updateShape(editingShapeId, { textStyle: merged });
-  }, [editingShapeId, shapes, updateShape]);
+  /** Toggle placement mode: click same type again → cancel */
+  const handleAddShape = (type: ShapeType) => {
+    setPendingType((cur) => (cur === type ? null : type));
+    setConnectFrom(null);
+  };
 
-  const editingShape = shapes.find((s) => s.id === editingShapeId);
-
-  const handleAddShape = (type: ShapeType) => addShape(defaultShapeProps(type));
+  /** Called by DiagramCanvas when user clicks on canvas in placement mode */
+  const handlePlaceShape = useCallback((gridX: number, gridY: number) => {
+    if (!pendingType) return;
+    addShape({ ...defaultShapeProps(pendingType), x: gridX, y: gridY });
+    setPendingType(null);
+  }, [pendingType, addShape]);
 
   const handleDelete = useCallback(() => {
     if (!selectedId) return;
@@ -81,15 +83,35 @@ export function EditorPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPendingType(null);
+        setConnectFrom(null);
+      }
       if ((e.key === "Delete" || e.key === "Backspace") && !(e.target instanceof HTMLInputElement)) {
         handleDelete();
+      }
+      if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        setZoom((z) => Math.min(4, +(z * 1.2).toFixed(3)));
+      }
+      if (e.ctrlKey && e.key === "-") {
+        e.preventDefault();
+        setZoom((z) => Math.max(0.2, +(z / 1.2).toFixed(3)));
+      }
+      if (e.ctrlKey && e.key === "0") {
+        e.preventDefault();
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleDelete]);
 
-  const handleToggleConnect = () => setConnectFrom((c) => c ? cancelConnect() : startConnect());
+  const handleToggleConnect = () => {
+    setPendingType(null);
+    setConnectFrom((c) => c ? cancelConnect() : startConnect());
+  };
 
   const handleConnectPort = (id: string) => {
     if (!connectFrom || connectFrom === "pick") setConnectFrom(selectSource(id));
@@ -107,6 +129,7 @@ export function EditorPage() {
 
       <Toolbar
         connectFrom={connectFrom} selectedId={selectedId} showAI={showAI}
+        pendingType={pendingType}
         onAddShape={handleAddShape} onToggleConnect={handleToggleConnect}
         onDelete={handleDelete} onToggleAI={() => setShowAI((v) => !v)}
         onExport={() => exportToDrawio(shapes, edges)}
@@ -114,7 +137,8 @@ export function EditorPage() {
 
       <DiagramCanvas
         shapes={shapes} edges={edges}
-        selectedId={selectedId} connectFrom={connectFrom} pan={pan}
+        selectedId={selectedId} connectFrom={connectFrom} pan={pan} zoom={zoom}
+        pendingType={pendingType}
         onSelectShape={setSelectedId}
         onMoveShape={(id, x, y) => updateShape(id, { x, y })}
         onUpdateShape={(id, props) => updateShape(id, props)}
@@ -122,14 +146,15 @@ export function EditorPage() {
         onRotateShape={(id, rotation) => updateShape(id, { rotation })}
         onConnectPort={handleConnectPort}
         onPanChange={setPan}
+        onZoomChange={(newZoom, newPan) => { setZoom(newZoom); setPan(newPan); }}
+        onCursorMove={() => {}}
+        onPlaceShape={handlePlaceShape}
         onDeselect={() => { setSelectedId(null); setConnectFrom(null); }}
         onEditStart={handleEditStart}
         onEditEnd={handleEditEnd}
       />
 
       <StatusBar shapeCount={shapes.length} edgeCount={edges.length} selectedId={selectedId} />
-
-     
 
       {showAI && <AIPanel onLoad={loadDiagram} onClose={() => setShowAI(false)} />}
     </div>

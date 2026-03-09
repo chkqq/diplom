@@ -10,8 +10,9 @@ interface ShapeElProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
-  svgRef: React.RefObject<SVGSVGElement>;
+  svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
+  zoom: number;
   onMouseDown: (e: React.MouseEvent) => void;
   onConnectClick: (e: React.MouseEvent) => void;
   onLabelChange: (text: string) => void;
@@ -23,15 +24,14 @@ interface ShapeElProps {
 
 export function ShapeEl({
   shape, selected, connecting,
-  svgRef, pan,
+  svgRef, pan, zoom,
   onMouseDown, onConnectClick, onLabelChange,
   onResize, onRotate, onEditStart, onEditEnd,
 }: ShapeElProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(shape.text);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<any>(null);
-  const rotateRef = useRef<any>(null);
 
   const ts = { ...DEFAULT_TEXT_STYLE, ...shape.textStyle };
 
@@ -56,22 +56,21 @@ export function ShapeEl({
     e.stopPropagation();
     setDraft(shape.text);
     setEditing(true);
-    // compute screen coords for toolbar anchor (top-center of shape)
     const svgRect = svgRef.current!.getBoundingClientRect();
-    const ax = px + pw / 2 + pan.x + svgRect.left;
-    const ay = py + pan.y + svgRect.top;
-    onEditStart(shape.id, { x: ax, y: ay });
+    onEditStart(shape.id, {
+      x: cx * zoom + pan.x + svgRect.left,
+      y: py * zoom + pan.y + svgRect.top,
+    });
   };
 
-  // Resize
   const onResizeStart = (e: React.MouseEvent, handle: ResizeHandle) => {
     e.preventDefault();
     resizeRef.current = { handle, startX: e.clientX, startY: e.clientY, origX: shape.x, origY: shape.y, origW: shape.w, origH: shape.h };
     const onMove = (ev: MouseEvent) => {
       if (!resizeRef.current) return;
       const { handle, startX, startY, origX, origY, origW, origH } = resizeRef.current;
-      const dx = Math.round((ev.clientX - startX) / CELL);
-      const dy = Math.round((ev.clientY - startY) / CELL);
+      const dx = Math.round((ev.clientX - startX) / (CELL * zoom));
+      const dy = Math.round((ev.clientY - startY) / (CELL * zoom));
       let nx = origX, ny = origY, nw = origW, nh = origH;
       if (handle.includes("e")) nw = Math.max(1, origW + dx);
       if (handle.includes("s")) nh = Math.max(1, origH + dy);
@@ -84,12 +83,11 @@ export function ShapeEl({
     window.addEventListener("mouseup", onUp);
   };
 
-  // Rotate
   const onRotateStart = (e: React.MouseEvent) => {
     e.preventDefault();
     const svgRect = svgRef.current!.getBoundingClientRect();
-    const rcx = cx + pan.x + svgRect.left;
-    const rcy = cy + pan.y + svgRect.top;
+    const rcx = cx * zoom + pan.x + svgRect.left;
+    const rcy = cy * zoom + pan.y + svgRect.top;
     const startAngle = Math.atan2(e.clientY - rcy, e.clientX - rcx) * (180 / Math.PI);
     const origRotation = shape.rotation ?? 0;
     const onMove = (ev: MouseEvent) => {
@@ -118,11 +116,11 @@ export function ShapeEl({
     );
   };
 
-  const fontStyle = [ts.italic ? "italic" : "", "normal"].filter(Boolean).join(" ");
-  const fontWeight = ts.bold ? "700" : "400";
+  const fontStyle      = [ts.italic ? "italic" : "", "normal"].filter(Boolean).join(" ");
+  const fontWeight     = ts.bold ? "700" : "400";
   const textDecoration = [ts.underline ? "underline" : "", ts.strikethrough ? "line-through" : ""].filter(Boolean).join(" ") || "none";
-  const textAnchor = ts.align === "left" ? "start" : ts.align === "right" ? "end" : "middle";
-  const labelX = ts.align === "left" ? px + 8 : ts.align === "right" ? px + pw - 8 : cx;
+  const textAnchor     = ts.align === "left" ? "start" : ts.align === "right" ? "end" : "middle";
+  const labelX         = ts.align === "left" ? px + 8 : ts.align === "right" ? px + pw - 8 : cx;
 
   return (
     <g transform={`rotate(${rotation}, ${cx}, ${cy})`}>
@@ -155,12 +153,9 @@ export function ShapeEl({
               style={{
                 width: "100%", background: "#0a1a14",
                 border: "1px solid #10b981", borderRadius: 4, outline: "none",
-                color: ts.color,
-                fontSize: ts.fontSize,
+                color: ts.color, fontSize: ts.fontSize,
                 fontFamily: `'${ts.fontFamily}', monospace`,
-                fontWeight,
-                fontStyle,
-                textDecoration,
+                fontWeight, fontStyle, textDecoration,
                 textAlign: ts.align === "justify" ? "left" : ts.align,
                 padding: "2px 4px", boxSizing: "border-box",
               }}
@@ -170,12 +165,9 @@ export function ShapeEl({
           <text
             x={labelX} y={cy + ts.fontSize * 0.35}
             textAnchor={textAnchor}
-            fill={ts.color}
-            fontSize={ts.fontSize}
+            fill={ts.color} fontSize={ts.fontSize}
             fontFamily={`'${ts.fontFamily}', monospace`}
-            fontWeight={fontWeight}
-            fontStyle={fontStyle}
-            textDecoration={textDecoration}
+            fontWeight={fontWeight} fontStyle={fontStyle} textDecoration={textDecoration}
             style={{ pointerEvents: "none", userSelect: "none" }}
           >
             {shape.text}

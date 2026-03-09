@@ -7,8 +7,9 @@ interface ShapeRendererProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
-  svgRef: React.RefObject<SVGSVGElement>;
+  svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
+  zoom: number;
   onMouseDown: (e: React.MouseEvent) => void;
   onConnectClick: (e: React.MouseEvent) => void;
   onUpdate: (id: string, props: Partial<Omit<Shape, "id">>) => void;

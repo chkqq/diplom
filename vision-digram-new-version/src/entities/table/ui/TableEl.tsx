@@ -9,8 +9,9 @@ interface TableElProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
-  svgRef: React.RefObject<SVGSVGElement>;
+  svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
+  zoom: number;
   onMouseDown: (e: React.MouseEvent) => void;
   onConnectClick: (e: React.MouseEvent) => void;
   onUpdate: (props: Partial<Omit<Shape, "id">>) => void;
@@ -22,9 +23,9 @@ interface TableElProps {
 
 export function TableEl({
   shape, selected, connecting,
-  svgRef, pan,
+  svgRef, pan, zoom,
   onMouseDown, onConnectClick, onUpdate,
-  onResize, onRotate, onEditStart, onEditEnd,
+  onResize, onRotate, onEditStart,
 }: TableElProps) {
   const rows  = shape.rows  ?? 3;
   const cols  = shape.cols  ?? 3;
@@ -57,7 +58,7 @@ export function TableEl({
     setTimeout(() => inputRef.current?.focus(), 0);
     const svgRect = svgRef.current?.getBoundingClientRect();
     if (svgRect) {
-      onEditStart(shape.id, { x: px + pw / 2 + pan.x + svgRect.left, y: py + pan.y + svgRect.top });
+      onEditStart(shape.id, { x: cx * zoom + pan.x + svgRect.left, y: py * zoom + pan.y + svgRect.top });
     }
   };
 
@@ -107,8 +108,8 @@ export function TableEl({
     const onMove = (ev: MouseEvent) => {
       if (!resizeRef.current) return;
       const { handle, startX, startY, origX, origY, origW, origH } = resizeRef.current;
-      const dx = Math.round((ev.clientX - startX) / CELL);
-      const dy = Math.round((ev.clientY - startY) / CELL);
+      const dx = Math.round((ev.clientX - startX) / (CELL * zoom));
+      const dy = Math.round((ev.clientY - startY) / (CELL * zoom));
       let nx = origX, ny = origY, nw = origW, nh = origH;
       if (handle.includes("e")) nw = Math.max(2, origW + dx);
       if (handle.includes("s")) nh = Math.max(1, origH + dy);
@@ -125,8 +126,8 @@ export function TableEl({
   const onRotateStart = (e: React.MouseEvent) => {
     e.preventDefault();
     const svgRect = svgRef.current!.getBoundingClientRect();
-    const rcx = cx + pan.x + svgRect.left;
-    const rcy = cy + pan.y + svgRect.top;
+    const rcx = cx * zoom + pan.x + svgRect.left;
+    const rcy = cy * zoom + pan.y + svgRect.top;
     const startAngle = Math.atan2(e.clientY - rcy, e.clientX - rcx) * (180 / Math.PI);
     const origRotation = shape.rotation ?? 0;
     const onMove = (ev: MouseEvent) => {
