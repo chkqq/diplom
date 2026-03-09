@@ -47,7 +47,7 @@ export function Toolbar({
     }}>
       {/* Logo */}
       <span style={{ color: "#10b981", fontWeight: 700, fontSize: 14, letterSpacing: 2, marginRight: 16 }}>
-        ◈ DIAGRAMIX
+        ◈ Vision-Diagram
       </span>
 
       {/* Shape buttons */}

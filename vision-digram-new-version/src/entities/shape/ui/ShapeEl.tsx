@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Shape } from "../../../shared/types/diagram";
+import { useState, useRef, useEffect } from "react";
+import type { Shape } from "../../../shared/store/diagramStore";
 import { CELL } from "../../../shared/config/grid";
 
 interface ShapeElProps {
@@ -20,15 +20,30 @@ export function ShapeEl({
   onLabelChange,
 }: ShapeElProps) {
   const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(shape.text);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(shape.text);
+  }, [shape.text, editing]);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const commitEdit = () => {
+    setEditing(false);
+    onLabelChange(draft);
+  };
 
   const px = shape.x * CELL;
   const py = shape.y * CELL;
   const pw = shape.w * CELL;
   const ph = shape.h * CELL;
 
-  const accent = selected ? "#6ee7b7" : connecting ? "#fbbf24" : "#4ade80";
-  const fill = selected ? "#1a2e2a" : "#111827";
+  const fill   = selected ? "#1a2e2a" : "#111827";
   const stroke = selected ? "#6ee7b7" : "#374151";
+  const accent = selected ? "#6ee7b7" : connecting ? "#fbbf24" : "#4ade80";
 
   const renderBody = () => {
     if (shape.type === "rectangle") {
@@ -43,7 +58,6 @@ export function ShapeEl({
         />
       );
     }
-    // diamond
     const cx = px + pw / 2;
     const cy = py + ph / 2;
     return (
@@ -55,10 +69,13 @@ export function ShapeEl({
   };
 
   return (
-    <g style={{ cursor: "move" }} onMouseDown={onMouseDown} onDoubleClick={() => setEditing(true)}>
+    <g
+      style={{ cursor: editing ? "text" : "move" }}
+      onMouseDown={(e) => { if (!editing) onMouseDown(e); }}
+      onDoubleClick={(e) => { e.stopPropagation(); setDraft(shape.text); setEditing(true); }}
+    >
       {renderBody()}
 
-      {/* Selection glow */}
       {selected && (
         <rect
           x={px - 2} y={py - 2} width={pw + 4} height={ph + 4}
@@ -67,28 +84,31 @@ export function ShapeEl({
         />
       )}
 
-      {/* Label */}
       {editing ? (
-        <foreignObject x={px + 4} y={py + ph / 2 - 12} width={pw - 8} height={24}>
+        <foreignObject x={px + 6} y={py + ph / 2 - 14} width={pw - 12} height={28}>
           <input
-            autoFocus
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitEdit();
+              if (e.key === "Escape") { setEditing(false); setDraft(shape.text); }
+              e.stopPropagation();
+            }}
+            onClick={(e) => e.stopPropagation()}
             style={{
-              background: "transparent",
-              border: "none",
+              width: "100%",
+              background: "#0a1a14",
+              border: "1px solid #10b981",
+              borderRadius: 4,
               outline: "none",
-              color: "#e5e7eb",
+              color: "#d1fae5",
               fontSize: 12,
               fontFamily: "'JetBrains Mono', monospace",
-              width: "100%",
               textAlign: "center",
-            }}
-            defaultValue={shape.text}
-            onBlur={(e) => { setEditing(false); onLabelChange(e.target.value); }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                setEditing(false);
-                onLabelChange((e.target as HTMLInputElement).value);
-              }
+              padding: "2px 4px",
+              boxSizing: "border-box",
             }}
           />
         </foreignObject>
@@ -101,11 +121,10 @@ export function ShapeEl({
           fontFamily="'JetBrains Mono', monospace"
           style={{ pointerEvents: "none", userSelect: "none" }}
         >
-          {shape.text}
+          {shape.text || ""}
         </text>
       )}
 
-      {/* Connect port — right side */}
       <circle
         cx={px + pw} cy={py + ph / 2}
         r={6}
@@ -113,7 +132,7 @@ export function ShapeEl({
         stroke={connecting ? "#fbbf24" : "#10b981"}
         strokeWidth={1.5}
         style={{ cursor: "crosshair" }}
-        onClick={onConnectClick}
+        onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
       />
     </g>
   );

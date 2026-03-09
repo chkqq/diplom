@@ -1,58 +1,55 @@
 import { useState, useCallback, useEffect } from "react";
-
-// shared
-import type { Shape, Edge, Diagram, ShapeType } from "../../shared/types/diagram";
-import { uid } from "../../shared/lib";
-import { CELL } from "../../shared/config/grid";
-
-// entities
-import { createShape, updateShapeLabel, moveShape, removeShape } from "../../entities/shape";
-import { createEdge, removeEdgesForShape } from "../../entities/edge";
-
-// features
+import type { ShapeType } from "../../shared/types/diagram";
 import type { ConnectState } from "../../features/connect-mode";
+
+import { useDiagramStore } from "../../shared/store/diagramStore";
 import { startConnect, cancelConnect, selectSource } from "../../features/connect-mode";
 import { exportToDrawio } from "../../features/export-diagram";
 import { AIPanel } from "../../features/ai-assistant";
-
-// widgets
 import { Toolbar } from "../../widgets/toolbar";
 import { DiagramCanvas } from "../../widgets/canvas";
 import { StatusBar } from "../../widgets/status-bar";
 
 export function EditorPage() {
-  const [shapes, setShapes] = useState<Shape[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [connectFrom, setConnectFrom] = useState<ConnectState>(null);
-  const [showAI, setShowAI] = useState(false);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // ── Zustand store ──
+  const shapes      = useDiagramStore((s) => s.shapes);
+  const edges       = useDiagramStore((s) => s.edges);
+  const addShape    = useDiagramStore((s) => s.addShape);
+  const updateShape = useDiagramStore((s) => s.updateShape);
+  const removeShape = useDiagramStore((s) => s.removeShape);
+  const addEdge     = useDiagramStore((s) => s.addEdge);
+  const loadDiagram = useDiagramStore((s) => s.loadDiagram);
+
+  // ── Local UI state ──
+  const [selectedId,   setSelectedId]   = useState<string | null>(null);
+  const [connectFrom,  setConnectFrom]  = useState<ConnectState>(null);
+  const [showAI,       setShowAI]       = useState(false);
+  const [pan,          setPan]          = useState({ x: 0, y: 0 });
 
   // ── Shape actions ──
   const handleAddShape = (type: ShapeType) => {
-    const shape = createShape(type);
-    setShapes((s) => [...s, shape]);
-    setSelectedId(shape.id);
-  };
-
-  const handleMoveShape = (id: string, x: number, y: number) => {
-    setShapes((s) => moveShape(s, id, x, y));
-  };
-
-  const handleLabelChange = (id: string, text: string) => {
-    setShapes((s) => updateShapeLabel(s, id, text));
+    // addShape auto-generates id via uuid
+    addShape({
+      type,
+      x: 3 + Math.floor(Math.random() * 5),
+      y: 3 + Math.floor(Math.random() * 4),
+      w: 4,
+      h: 2,
+      text: type,
+    });
   };
 
   const handleDelete = useCallback(() => {
     if (!selectedId) return;
-    setShapes((s) => removeShape(s, selectedId));
-    setEdges((e) => removeEdgesForShape(e, selectedId));
+    removeShape(selectedId); // store also removes connected edges
     setSelectedId(null);
-  }, [selectedId]);
+  }, [selectedId, removeShape]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Delete" || e.key === "Backspace") handleDelete();
+      if ((e.key === "Delete" || e.key === "Backspace") && !(e.target instanceof HTMLInputElement)) {
+        handleDelete();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -64,37 +61,14 @@ export function EditorPage() {
   };
 
   const handleConnectPort = (id: string) => {
-    if (!connectFrom) {
+    if (!connectFrom || connectFrom === "pick") {
       setConnectFrom(selectSource(id));
-    } else if (connectFrom !== id && connectFrom !== "pick") {
-      setEdges((e) => [...e, createEdge(connectFrom, id)]);
+    } else if (connectFrom !== id) {
+      addEdge(connectFrom, id);
       setConnectFrom(null);
-    } else if (connectFrom === "pick") {
-      setConnectFrom(selectSource(id));
     } else {
       setConnectFrom(null);
     }
-  };
-
-  // ── AI load ──
-  const handleLoadDiagram = (d: Diagram) => {
-    const newShapes: Shape[] = (d.shapes || []).map((s: any) => ({
-      id: s.id || uid(),
-      type: (["circle", "diamond"].includes(s.type) ? s.type : "rectangle") as ShapeType,
-      x: Math.max(0, Math.round((s.x ?? 0) / CELL)),
-      y: Math.max(0, Math.round((s.y ?? 0) / CELL)),
-      w: Math.max(2, Math.round((s.width ?? 128) / CELL)),
-      h: Math.max(1, Math.round((s.height ?? 64) / CELL)),
-      text: s.text || "",
-    }));
-    const newEdges: Edge[] = (d.edges || []).map((e: any) => ({
-      id: e.id || uid(),
-      source: e.source,
-      target: e.target,
-    }));
-    setShapes(newShapes);
-    setEdges(newEdges);
-    setSelectedId(null);
   };
 
   return (
@@ -123,8 +97,8 @@ export function EditorPage() {
         connectFrom={connectFrom}
         pan={pan}
         onSelectShape={setSelectedId}
-        onMoveShape={handleMoveShape}
-        onLabelChange={handleLabelChange}
+        onMoveShape={(id, x, y) => updateShape(id, { x, y })}
+        onLabelChange={(id, text) => updateShape(id, { text })}
         onConnectPort={handleConnectPort}
         onPanChange={setPan}
         onDeselect={() => { setSelectedId(null); setConnectFrom(null); }}
@@ -136,7 +110,12 @@ export function EditorPage() {
         selectedId={selectedId}
       />
 
-      {showAI && <AIPanel onDiagram={handleLoadDiagram} onClose={() => setShowAI(false)} />}
+      {showAI && (
+        <AIPanel
+          onLoad={loadDiagram}
+          onClose={() => setShowAI(false)}
+        />
+      )}
     </div>
   );
 }

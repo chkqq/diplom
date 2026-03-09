@@ -1,16 +1,19 @@
 import { useState } from "react";
-import type { Diagram } from "../../../shared/types/diagram";
+import type { Shape, Edge } from "../../../shared/store/diagramStore";
 import type { ChatMessage } from "../model/chatModel";
 import { generateDiagram } from "../api/generateDiagram";
 import { userMessage, aiMessage } from "../model/chatModel";
+import { CELL } from "../../../shared/config/grid";
+import { v4 as uuid } from "uuid";
+import type { ShapeType } from "../../../shared/types/diagram";
 
 interface AIPanelProps {
-  onDiagram: (d: Diagram) => void;
+  onLoad: (shapes: Shape[], edges: Edge[]) => void;
   onClose: () => void;
 }
 
-export function AIPanel({ onDiagram, onClose }: AIPanelProps) {
-  const [prompt, setPrompt] = useState("");
+export function AIPanel({ onLoad, onClose }: AIPanelProps) {
+  const [prompt, setPrompt]   = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ChatMessage[]>([]);
 
@@ -22,8 +25,26 @@ export function AIPanel({ onDiagram, onClose }: AIPanelProps) {
     setLoading(true);
     try {
       const data = await generateDiagram(msg);
+
+      // Normalize AI response to store Shape/Edge format
+      const shapes: Shape[] = (data.shapes ?? []).map((s: any) => ({
+        id:   s.id || uuid(),
+        type: (["circle", "diamond"].includes(s.type) ? s.type : "rectangle") as ShapeType,
+        x:    Math.max(0, Math.round((s.x ?? 0) / CELL)),
+        y:    Math.max(0, Math.round((s.y ?? 0) / CELL)),
+        w:    Math.max(2, Math.round((s.width ?? 128) / CELL)),
+        h:    Math.max(1, Math.round((s.height ?? 64) / CELL)),
+        text: s.text ?? "",
+      }));
+
+      const edges: Edge[] = (data.edges ?? []).map((e: any) => ({
+        id:     e.id || uuid(),
+        source: e.source,
+        target: e.target,
+      }));
+
       setHistory((h) => [...h, aiMessage("✅ Диаграмма сгенерирована!")]);
-      onDiagram(data);
+      onLoad(shapes, edges);
     } catch (e: any) {
       setHistory((h) => [...h, aiMessage("❌ " + (e.message || "Ошибка"))]);
     } finally {

@@ -1,8 +1,8 @@
-import type { Shape, Edge } from "../../../shared/types/diagram";
+import type { Shape, Edge } from "../../../shared/store/diagramStore";
 import { CELL } from "../../../shared/config/grid";
 
 function shapeStyle(type: Shape["type"]): string {
-  if (type === "circle") return "ellipse;whiteSpace=wrap;html=1;";
+  if (type === "circle")  return "ellipse;whiteSpace=wrap;html=1;";
   if (type === "diamond") return "rhombus;whiteSpace=wrap;html=1;";
   return "rounded=1;whiteSpace=wrap;html=1;";
 }
@@ -33,9 +33,9 @@ export function exportToDrawio(shapes: Shape[], edges: Edge[]): void {
 </mxfile>`;
 
   const blob = new Blob([xml], { type: "application/xml" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
   a.download = "diagram.drawio";
   a.click();
   URL.revokeObjectURL(url);

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { Shape, Edge } from "../../../shared/types/diagram";
+import type { Shape, Edge } from "../../../shared/store/diagramStore";
 import type { ConnectState } from "../../../features/connect-mode";
 import { CELL, GRID_COLS, GRID_ROWS } from "../../../shared/config/grid";
 import { snapToGrid } from "../../../shared/lib";
@@ -22,10 +22,11 @@ interface DiagramCanvasProps {
 
 export function DiagramCanvas({
   shapes, edges, selectedId, connectFrom, pan,
-  onSelectShape, onMoveShape, onLabelChange, onConnectPort, onPanChange, onDeselect,
+  onSelectShape, onMoveShape, onLabelChange,
+  onConnectPort, onPanChange, onDeselect,
 }: DiagramCanvasProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const panRef = useRef({ active: false, startX: 0, startY: 0, panX: 0, panY: 0 });
+  const svgRef  = useRef<SVGSVGElement>(null);
+  const panRef  = useRef({ active: false, startX: 0, startY: 0, panX: 0, panY: 0 });
   const dragRef = useRef<{ id: string; offX: number; offY: number } | null>(null);
 
   const SVG_W = GRID_COLS * CELL;
@@ -49,7 +50,7 @@ export function DiagramCanvas({
     if (dragRef.current) {
       const rect = svgRef.current!.getBoundingClientRect();
       const rawX = e.clientX - rect.left - pan.x - dragRef.current.offX;
-      const rawY = e.clientY - rect.top - pan.y - dragRef.current.offY;
+      const rawY = e.clientY - rect.top  - pan.y - dragRef.current.offY;
       onMoveShape(dragRef.current.id, Math.max(0, snapToGrid(rawX)), Math.max(0, snapToGrid(rawY)));
     }
   };
@@ -62,7 +63,7 @@ export function DiagramCanvas({
   const onShapeMouseDown = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (connectFrom) return;
-    const rect = svgRef.current!.getBoundingClientRect();
+    const rect  = svgRef.current!.getBoundingClientRect();
     const shape = shapes.find((s) => s.id === id)!;
     dragRef.current = {
       id,
@@ -97,14 +98,15 @@ export function DiagramCanvas({
         </defs>
 
         <g transform={`translate(${pan.x}, ${pan.y})`}>
-          {/* Background grid */}
-          <rect data-bg="true" x={-CELL * 4} y={-CELL * 4}
-            width={SVG_W + CELL * 8} height={SVG_H + CELL * 8} fill="url(#grid)" />
+          <rect
+            data-bg="true"
+            x={-CELL * 4} y={-CELL * 4}
+            width={SVG_W + CELL * 8} height={SVG_H + CELL * 8}
+            fill="url(#grid)"
+          />
 
-          {/* Edges */}
           {edges.map((ed) => <EdgeEl key={ed.id} edge={ed} shapes={shapes} />)}
 
-          {/* Shapes */}
           {shapes.map((sh) => (
             <ShapeEl
               key={sh.id}
@@ -119,7 +121,6 @@ export function DiagramCanvas({
         </g>
       </svg>
 
-      {/* Empty hint */}
       {shapes.length === 0 && (
         <div style={{
           position: "absolute", top: "50%", left: "50%",
@@ -132,7 +133,6 @@ export function DiagramCanvas({
         </div>
       )}
 
-      {/* Connect hint */}
       {connectFrom && connectFrom !== "pick" && (
         <div style={{
           position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",

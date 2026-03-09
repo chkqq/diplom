@@ -1,4 +1,4 @@
-import type { Edge, Shape } from "../../../shared/types/diagram";
+import type { Edge, Shape } from "../../../shared/store/diagramStore";
 import { buildEdgePath } from "../../../shared/lib";
 
 interface EdgeElProps {
