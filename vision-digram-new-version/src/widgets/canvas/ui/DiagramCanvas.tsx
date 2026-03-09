@@ -3,7 +3,7 @@ import type { Shape, Edge } from "../../../shared/store/diagramStore";
 import type { ConnectState } from "../../../features/connect-mode";
 import { CELL, GRID_COLS, GRID_ROWS } from "../../../shared/config/grid";
 import { snapToGrid } from "../../../shared/lib";
-import { ShapeEl } from "../../../entities/shape";
+import { ShapeRenderer } from "../../../entities/shape";
 import { EdgeEl } from "../../../entities/edge";
 
 interface DiagramCanvasProps {
@@ -14,16 +14,22 @@ interface DiagramCanvasProps {
   pan: { x: number; y: number };
   onSelectShape: (id: string) => void;
   onMoveShape: (id: string, x: number, y: number) => void;
-  onLabelChange: (id: string, text: string) => void;
+  onUpdateShape: (id: string, props: Partial<Omit<Shape, "id">>) => void;
+  onResizeShape: (id: string, x: number, y: number, w: number, h: number) => void;
+  onRotateShape: (id: string, rotation: number) => void;
   onConnectPort: (id: string) => void;
   onPanChange: (pan: { x: number; y: number }) => void;
   onDeselect: () => void;
+  onEditStart: (shapeId: string, anchor: { x: number; y: number }) => void;
+  onEditEnd: () => void;
 }
 
 export function DiagramCanvas({
   shapes, edges, selectedId, connectFrom, pan,
-  onSelectShape, onMoveShape, onLabelChange,
+  onSelectShape, onMoveShape, onUpdateShape,
+  onResizeShape, onRotateShape,
   onConnectPort, onPanChange, onDeselect,
+  onEditStart, onEditEnd,
 }: DiagramCanvasProps) {
   const svgRef  = useRef<SVGSVGElement>(null);
   const panRef  = useRef({ active: false, startX: 0, startY: 0, panX: 0, panY: 0 });
@@ -37,6 +43,7 @@ export function DiagramCanvas({
     if (target === svgRef.current || target.getAttribute("data-bg")) {
       panRef.current = { active: true, startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y };
       onDeselect();
+      onEditEnd();
     }
   };
 
@@ -98,8 +105,7 @@ export function DiagramCanvas({
         </defs>
 
         <g transform={`translate(${pan.x}, ${pan.y})`}>
-          <rect
-            data-bg="true"
+          <rect data-bg="true"
             x={-CELL * 4} y={-CELL * 4}
             width={SVG_W + CELL * 8} height={SVG_H + CELL * 8}
             fill="url(#grid)"
@@ -108,14 +114,20 @@ export function DiagramCanvas({
           {edges.map((ed) => <EdgeEl key={ed.id} edge={ed} shapes={shapes} />)}
 
           {shapes.map((sh) => (
-            <ShapeEl
+            <ShapeRenderer
               key={sh.id}
               shape={sh}
               selected={selectedId === sh.id}
               connecting={connectFrom === sh.id}
+              svgRef={svgRef}
+              pan={pan}
               onMouseDown={(e) => onShapeMouseDown(e, sh.id)}
               onConnectClick={(e) => { e.stopPropagation(); onConnectPort(sh.id); }}
-              onLabelChange={(text) => onLabelChange(sh.id, text)}
+              onUpdate={onUpdateShape}
+              onResize={onResizeShape}
+              onRotate={onRotateShape}
+              onEditStart={onEditStart}
+              onEditEnd={onEditEnd}
             />
           ))}
         </g>

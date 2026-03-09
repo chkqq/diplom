@@ -3,14 +3,44 @@ import { persist } from "zustand/middleware";
 import { v4 as uuid } from "uuid";
 import type { ShapeType } from "../types/diagram";
 
+export interface TextStyle {
+  fontFamily:  string;   // e.g. "Helvetica"
+  fontSize:    number;   // px
+  bold:        boolean;
+  italic:      boolean;
+  underline:   boolean;
+  strikethrough: boolean;
+  align:       "left" | "center" | "right" | "justify";
+  color:       string;   // hex
+  lineHeight:  number;   // e.g. 1.2
+}
+
+export const DEFAULT_TEXT_STYLE: TextStyle = {
+  fontFamily:    "JetBrains Mono",
+  fontSize:      12,
+  bold:          false,
+  italic:        false,
+  underline:     false,
+  strikethrough: false,
+  align:         "center",
+  color:         "#d1fae5",
+  lineHeight:    1.2,
+};
+
 export interface Shape {
   id: string;
   type: ShapeType;
-  x: number;   // grid cells
-  y: number;   // grid cells
-  w: number;   // grid cells
-  h: number;   // grid cells
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   text: string;
+  rotation: number;
+  items: string[];
+  rows: number;
+  cols: number;
+  cells: string[][];
+  textStyle: TextStyle;
 }
 
 export interface Edge {
@@ -64,8 +94,7 @@ export const useDiagramStore = create<DiagramState>()(
       reset: () => set({ shapes: [], edges: [] }),
     }),
     {
-      name: "vision-diagram", // localStorage key
-      // persist only data, not actions
+      name: "vision-diagram",
       partialize: (state) => ({ shapes: state.shapes, edges: state.edges }),
     }
   )
