@@ -8,7 +8,6 @@ import { DEFAULT_TEXT_STYLE } from "../../shared/store/diagramStore";
 import { startConnect, cancelConnect, selectSource } from "../../features/connect-mode";
 import { exportToDrawio } from "../../features/export-diagram";
 import { AIPanel } from "../../features/ai-assistant";
-import { TextFormatToolbar } from "../../features/text-format/ui/TextFormatToolbar";
 import { Toolbar } from "../../widgets/toolbar";
 import { DiagramCanvas } from "../../widgets/canvas";
 import { StatusBar } from "../../widgets/status-bar";
@@ -130,15 +129,7 @@ export function EditorPage() {
 
       <StatusBar shapeCount={shapes.length} edgeCount={edges.length} selectedId={selectedId} />
 
-      {/* Floating text format toolbar */}
-      {editingShapeId && toolbarAnchor && editingShape && (
-        <TextFormatToolbar
-          anchorEl={toolbarAnchor}
-          style={{ ...DEFAULT_TEXT_STYLE, ...editingShape.textStyle }}
-          onChange={handleTextStyleChange}
-          onClose={handleEditEnd}
-        />
-      )}
+     
 
       {showAI && <AIPanel onLoad={loadDiagram} onClose={() => setShowAI(false)} />}
     </div>

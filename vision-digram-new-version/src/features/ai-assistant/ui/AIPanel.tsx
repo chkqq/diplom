@@ -3,7 +3,6 @@ import type { Shape, Edge } from "../../../shared/store/diagramStore";
 import type { ChatMessage } from "../model/chatModel";
 import { generateDiagram } from "../api/generateDiagram";
 import { userMessage, aiMessage } from "../model/chatModel";
-import { CELL } from "../../../shared/config/grid";
 import { v4 as uuid } from "uuid";
 import type { ShapeType } from "../../../shared/types/diagram";
 
@@ -26,16 +25,39 @@ export function AIPanel({ onLoad, onClose }: AIPanelProps) {
     try {
       const data = await generateDiagram(msg);
 
-      // Normalize AI response to store Shape/Edge format
-      const shapes: Shape[] = (data.shapes ?? []).map((s: any) => ({
-        id:   s.id || uuid(),
-        type: (["circle", "diamond"].includes(s.type) ? s.type : "rectangle") as ShapeType,
-        x:    Math.max(0, Math.round((s.x ?? 0) / CELL)),
-        y:    Math.max(0, Math.round((s.y ?? 0) / CELL)),
-        w:    Math.max(2, Math.round((s.width ?? 128) / CELL)),
-        h:    Math.max(1, Math.round((s.height ?? 64) / CELL)),
-        text: s.text ?? "",
-      }));
+      // Server already returns grid-cell coordinates — just map to store Shape format
+      const VALID: ShapeType[] = ["rectangle", "circle", "diamond", "list", "table"];
+      const shapes: Shape[] = (data.shapes ?? []).map((s: any) => {
+        const type: ShapeType = VALID.includes(s.type) ? s.type : "rectangle";
+        const shape: Shape = {
+          id:       s.id || uuid(),
+          type,
+          x:        Math.max(0, Math.round(s.x ?? 2)),
+          y:        Math.max(0, Math.round(s.y ?? 2)),
+          w:        Math.max(2, Math.round(s.w ?? 4)),
+          h:        Math.max(1, Math.round(s.h ?? 2)),
+          text:     s.text ?? "",
+          rotation: s.rotation ?? 0,
+          items:    [],
+          rows:     2,
+          cols:     2,
+          cells:    [["", ""], ["", ""]],
+          textStyle: { fontFamily: "JetBrains Mono", fontSize: 12, bold: false, italic: false, underline: false, strikethrough: false, align: "center", color: "#d1fae5", lineHeight: 1.2 },
+        };
+        if (type === "list") {
+          shape.items = Array.isArray(s.items) ? s.items.map(String) : [];
+        }
+        if (type === "table") {
+          shape.rows  = Math.max(1, s.rows ?? 2);
+          shape.cols  = Math.max(1, s.cols ?? 2);
+          shape.cells = Array.from({ length: shape.rows }, (_, r) =>
+            Array.from({ length: shape.cols! }, (_, c) =>
+              Array.isArray(s.cells) && Array.isArray(s.cells[r]) ? String(s.cells[r][c] ?? "") : ""
+            )
+          );
+        }
+        return shape;
+      });
 
       const edges: Edge[] = (data.edges ?? []).map((e: any) => ({
         id:     e.id || uuid(),
