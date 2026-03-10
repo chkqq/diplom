@@ -6,19 +6,24 @@ interface ToolbarProps {
   selectedId: string | null;
   showAI: boolean;
   pendingType: ShapeType | null;
+  canUndo: boolean;
+  canRedo: boolean;
   onAddShape: (type: ShapeType) => void;
   onToggleConnect: () => void;
   onDelete: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
   onToggleAI: () => void;
   onExport: () => void;
+  onImport: () => void;
 }
 
-const SHAPES: { type: ShapeType; icon: string; label: string }[] = [
-  { type: "rectangle", icon: "▭", label: "rect"    },
-  { type: "circle",    icon: "◯", label: "circle"  },
-  { type: "diamond",   icon: "◇", label: "diamond" },
-  { type: "list",      icon: "☰", label: "list"    },
-  { type: "table",     icon: "⊞", label: "table"   },
+const SHAPES: { type: ShapeType; icon: string }[] = [
+  { type: "rectangle", icon: "▭"    },
+  { type: "circle",    icon: "◯"  },
+  { type: "diamond",   icon: "◇" },
+  { type: "list",      icon: "☰"    },
+  { type: "table",     icon: "⊞"   },
 ];
 
 const btn = (active = false, danger = false): React.CSSProperties => ({
@@ -38,7 +43,8 @@ const btn = (active = false, danger = false): React.CSSProperties => ({
 
 export function Toolbar({
   connectFrom, selectedId, showAI, pendingType,
-  onAddShape, onToggleConnect, onDelete, onToggleAI, onExport,
+  canUndo, canRedo,
+  onAddShape, onToggleConnect, onDelete, onUndo, onRedo, onToggleAI, onExport, onImport,
 }: ToolbarProps) {
   return (
     <div style={{
@@ -50,15 +56,32 @@ export function Toolbar({
       <span style={{ color: "#10b981", fontWeight: 700, fontSize: 13, letterSpacing: 2, marginRight: 12, whiteSpace: "nowrap" }}>
         ◈ Vision-Diagram
       </span>
+      <button
+        onClick={onUndo}
+        disabled={!canUndo}
+        style={{ ...btn(), opacity: canUndo ? 1 : 0.35, cursor: canUndo ? "pointer" : "default" }}
+        title="Undo (Ctrl+Z)"
+      >
+        ↶
+      </button>
+      <button
+        onClick={onRedo}
+        disabled={!canRedo}
+        style={{ ...btn(), opacity: canRedo ? 1 : 0.35, cursor: canRedo ? "pointer" : "default" }}
+        title="Redo (Ctrl+Shift+Z)"
+      >
+        ↷
+      </button>
 
-      {SHAPES.map(({ type, icon, label }) => {
+      <div style={{ width: 1, height: 24, background: "#1f2937", margin: "0 4px" }} />
+      {SHAPES.map(({ type, icon}) => {
         const isActive = pendingType === type;
         return (
           <button
             key={type}
             onClick={() => onAddShape(type)}
             style={btn(isActive)}
-            title={isActive ? `Click on canvas to place ${label} (Esc to cancel)` : `Place ${label}`}
+            title={isActive ? `Click on canvas to place ${type} (Esc to cancel)` : `Place ${type}`}
             onMouseEnter={(e) => {
               if (!isActive) {
                 const b = e.currentTarget;
@@ -74,7 +97,7 @@ export function Toolbar({
               }
             }}
           >
-            {icon} {label}
+            {icon}
             {isActive && (
               <span style={{ fontSize: 9, opacity: 0.7, marginLeft: 2 }}>●</span>
             )}
@@ -84,8 +107,10 @@ export function Toolbar({
 
       <div style={{ width: 1, height: 24, background: "#1f2937", margin: "0 4px" }} />
 
+
+
       <button onClick={onToggleConnect} style={btn(!!connectFrom)}>
-        ⟶ connect
+        ⟶
       </button>
 
       {selectedId && (
@@ -103,15 +128,25 @@ export function Toolbar({
       )}
 
       <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-        <button onClick={onToggleAI} style={btn(showAI)}>
+        <button onClick={onToggleAI} style={btn(showAI)} title="Открыть Ai ассистента">
           <span style={{ fontSize: 14 }}>✦</span> AI
         </button>
 
+        <button
+          onClick={onImport}
+          style={btn()}
+          onMouseEnter={(e) => { const b = e.currentTarget; b.style.borderColor="#10b981"; b.style.color="#6ee7b7"; }}
+          onMouseLeave={(e) => { const b = e.currentTarget; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
+          title="Открыть .drawio файл"
+        >
+          ↑ .drawio
+        </button>
         <button
           onClick={onExport}
           style={btn()}
           onMouseEnter={(e) => { const b = e.currentTarget; b.style.borderColor="#6366f1"; b.style.color="#818cf8"; }}
           onMouseLeave={(e) => { const b = e.currentTarget; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
+          title="Сохранить как .drawio"
         >
           ↓ .drawio
         </button>

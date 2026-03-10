@@ -17,8 +17,29 @@ export function shapeCenter(s: Shape): { x: number; y: number } {
 }
 
 export function buildEdgePath(a: Shape, b: Shape): string {
-  const from = shapeCenter(a);
-  const to   = shapeCenter(b);
-  const mx   = Math.round((from.x + to.x) / 2 / CELL) * CELL;
-  return `M ${from.x} ${from.y} L ${mx} ${from.y} L ${mx} ${to.y} L ${to.x} ${to.y}`;
+  const fromC = shapeCenter(a);
+  const toC   = shapeCenter(b);
+
+  const dx = Math.abs(toC.x - fromC.x);
+  const dy = Math.abs(toC.y - fromC.y);
+
+  if (dx >= dy) {
+    // Horizontal-dominant: exit left/right boundary of source, enter left/right boundary of target
+    const goRight = toC.x >= fromC.x;
+    const startX  = goRight ? (a.x + a.w) * CELL : a.x * CELL;
+    const startY  = fromC.y;
+    const endX    = goRight ? b.x * CELL : (b.x + b.w) * CELL;
+    const endY    = toC.y;
+    const mx      = Math.round((startX + endX) / 2 / CELL) * CELL;
+    return `M ${startX} ${startY} L ${mx} ${startY} L ${mx} ${endY} L ${endX} ${endY}`;
+  } else {
+    // Vertical-dominant: exit top/bottom boundary of source, enter top/bottom boundary of target
+    const goDown = toC.y >= fromC.y;
+    const startX = fromC.x;
+    const startY = goDown ? (a.y + a.h) * CELL : a.y * CELL;
+    const endX   = toC.x;
+    const endY   = goDown ? b.y * CELL : (b.y + b.h) * CELL;
+    const my     = Math.round((startY + endY) / 2 / CELL) * CELL;
+    return `M ${startX} ${startY} L ${startX} ${my} L ${endX} ${my} L ${endX} ${endY}`;
+  }
 }

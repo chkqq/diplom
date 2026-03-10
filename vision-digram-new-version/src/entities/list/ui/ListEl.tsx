@@ -9,6 +9,7 @@ interface ListElProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
+  connectMode: boolean;
   svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
   zoom: number;
@@ -25,7 +26,7 @@ const HEADER_H = 28;
 const ROW_H    = 28;
 
 export function ListEl({
-  shape, selected, connecting,
+  shape, selected, connecting, connectMode,
   svgRef, pan, zoom,
   onMouseDown, onConnectClick, onUpdate,
   onResize, onRotate, onEditStart,
@@ -233,13 +234,15 @@ export function ListEl({
           })()}
         </g>{/* end clipPath */}
 
-        {/* Connect port */}
-        <circle cx={px + pw} cy={cy} r={6}
-          fill={connecting ? "#fbbf24" : "#064e3b"}
-          stroke={connecting ? "#fbbf24" : "#10b981"}
-          strokeWidth={1.5} style={{ cursor: "crosshair" }}
-          onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
-        />
+        {/* Connect port — только в режиме connect */}
+        {connectMode && (
+          <circle cx={px + pw} cy={cy} r={6}
+            fill={connecting ? "#fbbf24" : "#064e3b"}
+            stroke={connecting ? "#fbbf24" : "#10b981"}
+            strokeWidth={1.5} style={{ cursor: "crosshair" }}
+            onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
+          />
+        )}
 
         {/* Selection glow */}
         {selected && (

@@ -10,6 +10,7 @@ interface ShapeElProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
+  connectMode: boolean;
   svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
   zoom: number;
@@ -23,7 +24,7 @@ interface ShapeElProps {
 }
 
 export function ShapeEl({
-  shape, selected, connecting,
+  shape, selected, connecting, connectMode,
   svgRef, pan, zoom,
   onMouseDown, onConnectClick, onLabelChange,
   onResize, onRotate, onEditStart, onEditEnd,
@@ -174,12 +175,14 @@ export function ShapeEl({
           </text>
         )}
 
-        <circle cx={px+pw} cy={cy} r={6}
-          fill={connecting ? "#fbbf24" : "#064e3b"}
-          stroke={connecting ? "#fbbf24" : "#10b981"}
-          strokeWidth={1.5} style={{ cursor: "crosshair" }}
-          onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
-        />
+        {connectMode && (
+          <circle cx={px+pw} cy={cy} r={6}
+            fill={connecting ? "#fbbf24" : "#064e3b"}
+            stroke={connecting ? "#fbbf24" : "#10b981"}
+            strokeWidth={1.5} style={{ cursor: "crosshair" }}
+            onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
+          />
+        )}
       </g>
 
       {selected && (

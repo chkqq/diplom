@@ -6,6 +6,9 @@ import { randomUUID } from "crypto";
 // ─── Types (mirrored from frontend shared/types/diagram.ts) ──────────────────
 
 type ShapeType = "rectangle" | "circle" | "diamond" | "list" | "table";
+type ArrowType  = "line" | "filled" | "empty" | "source" | "both";
+
+const VALID_ARROW_TYPES: ArrowType[] = ["line", "filled", "empty", "source", "both"];
 
 interface Shape {
   id: string;
@@ -28,6 +31,7 @@ interface Edge {
   id: string;
   source: string;
   target: string;
+  arrowType?: ArrowType;
 }
 
 interface Diagram {
@@ -109,6 +113,13 @@ Available shape types and their properties:
 - "table"     — data table.  Required: x, y, w(≥cols*2), h(≥rows+1), text (title),
                               rows (int), cols (int), cells (string[rows][cols]).
 
+Edge arrowType values (optional field, default is "filled"):
+- "filled"  — solid filled arrowhead at target. Use for directed flow, data passing, calls.
+- "empty"   — hollow arrowhead at target. Use for inheritance, interface implementation, generalization.
+- "source"  — arrowhead at source only. Use when action originates from source (events, triggers).
+- "both"    — arrowheads at both ends. Use for bidirectional communication, two-way data exchange.
+- "line"    — plain line, no arrowheads. Use for associations, grouping, undirected relationships.
+
 JSON schema:
 {
   "shapes": [
@@ -135,7 +146,8 @@ JSON schema:
     }
   ],
   "edges": [
-    { "id": "e1", "source": "s1", "target": "s2" }
+    { "id": "e1", "source": "s1", "target": "s2", "arrowType": "filled" },
+    { "id": "e2", "source": "s2", "target": "s3", "arrowType": "empty"  }
   ]
 }
 
@@ -143,7 +155,8 @@ Rules:
 - Keep x in 2–${GRID_COLS - 12}, y in 2–${GRID_ROWS - 12}.
 - Space shapes ≥ 2 cells apart so they do not overlap.
 - Choose the shape type that best fits the element's semantic role.
-- For list/table types, always include all required extra fields.`;
+- For list/table types, always include all required extra fields.
+- Always set arrowType on every edge — choose the one that best matches the relationship semantics.`;
 
     const userPrompt = `Create a diagram: "${prompt.trim()}"`;
 
@@ -228,11 +241,17 @@ function normalizeDiagram(d: Diagram): Diagram {
     return shape;
   });
 
-  const edges: Edge[] = (d.edges ?? []).map((e) => ({
-    id:     e.id || randomUUID(),
-    source: e.source,
-    target: e.target,
-  }));
+  const edges: Edge[] = (d.edges ?? []).map((e) => {
+    const arrowType: ArrowType = VALID_ARROW_TYPES.includes(e.arrowType as ArrowType)
+      ? (e.arrowType as ArrowType)
+      : "filled";
+    return {
+      id:        e.id || randomUUID(),
+      source:    e.source,
+      target:    e.target,
+      arrowType,
+    };
+  });
 
   return { shapes, edges };
 }

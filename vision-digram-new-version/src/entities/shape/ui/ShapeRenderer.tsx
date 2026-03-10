@@ -7,6 +7,7 @@ interface ShapeRendererProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
+  connectMode: boolean;
   svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
   zoom: number;

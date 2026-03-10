@@ -9,6 +9,7 @@ interface TableElProps {
   shape: Shape;
   selected: boolean;
   connecting: boolean;
+  connectMode: boolean;
   svgRef: React.RefObject<SVGSVGElement | null>;
   pan: { x: number; y: number };
   zoom: number;
@@ -22,7 +23,7 @@ interface TableElProps {
 }
 
 export function TableEl({
-  shape, selected, connecting,
+  shape, selected, connecting, connectMode,
   svgRef, pan, zoom,
   onMouseDown, onConnectClick, onUpdate,
   onResize, onRotate, onEditStart,
@@ -207,13 +208,15 @@ export function TableEl({
           </>
         )}
 
-        {/* Connect port */}
-        <circle cx={px + pw} cy={cy} r={6}
-          fill={connecting ? "#fbbf24" : "#064e3b"}
-          stroke={connecting ? "#fbbf24" : "#10b981"}
-          strokeWidth={1.5} style={{ cursor: "crosshair" }}
-          onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
-        />
+        {/* Connect port — только в режиме connect */}
+        {connectMode && (
+          <circle cx={px + pw} cy={cy} r={6}
+            fill={connecting ? "#fbbf24" : "#064e3b"}
+            stroke={connecting ? "#fbbf24" : "#10b981"}
+            strokeWidth={1.5} style={{ cursor: "crosshair" }}
+            onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
+          />
+        )}
 
         {selected && (
           <rect x={px - 2} y={py - 2} width={pw + 4} height={ph + 4}

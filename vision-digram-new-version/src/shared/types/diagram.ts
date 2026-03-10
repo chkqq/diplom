@@ -17,10 +17,13 @@ export interface Shape {
   cells?: string[][];  // [row][col]
 }
 
+export type ArrowType = "line" | "filled" | "empty" | "source" | "both";
+
 export interface Edge {
   id: string;
   source: string;
   target: string;
+  arrowType?: ArrowType;
 }
 
 export interface Diagram {
