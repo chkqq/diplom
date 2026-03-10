@@ -65,10 +65,10 @@ export function AIPanel({ onLoad, onClose }: AIPanelProps) {
         target: e.target,
       }));
 
-      setHistory((h) => [...h, aiMessage("✅ Диаграмма сгенерирована!")]);
+      setHistory((h) => [...h, aiMessage("✅ Diagram generated!")]);
       onLoad(shapes, edges);
     } catch (e: any) {
-      setHistory((h) => [...h, aiMessage("❌ " + (e.message || "Ошибка"))]);
+      setHistory((h) => [...h, aiMessage("❌ " + (e.message || "Error"))]);
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ export function AIPanel({ onLoad, onClose }: AIPanelProps) {
       <div style={{ flex: 1, maxHeight: 240, overflowY: "auto", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
         {history.length === 0 && (
           <p style={{ color: "#374151", fontSize: 11, textAlign: "center", marginTop: 16 }}>
-            Опишите диаграмму и ИИ её создаст
+            Describe a diagram and AI will create it
           </p>
         )}
         {history.map((m, i) => (
@@ -105,7 +105,7 @@ export function AIPanel({ onLoad, onClose }: AIPanelProps) {
             {m.text}
           </div>
         ))}
-        {loading && <div style={{ alignSelf: "flex-start", color: "#10b981", fontSize: 11 }}>⏳ Генерирую...</div>}
+        {loading && <div style={{ alignSelf: "flex-start", color: "#10b981", fontSize: 11 }}>⏳ Generating...</div>}
       </div>
 
       {/* Input */}

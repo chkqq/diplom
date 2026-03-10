@@ -128,7 +128,7 @@ export function Toolbar({
       )}
 
       <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-        <button onClick={onToggleAI} style={btn(showAI)} title="Открыть Ai ассистента">
+        <button onClick={onToggleAI} style={btn(showAI)} title="Open Ai Assistant">
           <span style={{ fontSize: 14 }}>✦</span> AI
         </button>
 
@@ -137,7 +137,7 @@ export function Toolbar({
           style={btn()}
           onMouseEnter={(e) => { const b = e.currentTarget; b.style.borderColor="#10b981"; b.style.color="#6ee7b7"; }}
           onMouseLeave={(e) => { const b = e.currentTarget; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
-          title="Открыть .drawio файл"
+          title="Open .drawio file"
         >
           ↑ .drawio
         </button>
@@ -146,7 +146,7 @@ export function Toolbar({
           style={btn()}
           onMouseEnter={(e) => { const b = e.currentTarget; b.style.borderColor="#6366f1"; b.style.color="#818cf8"; }}
           onMouseLeave={(e) => { const b = e.currentTarget; b.style.borderColor="#374151"; b.style.color="#9ca3af"; }}
-          title="Сохранить как .drawio"
+          title="Save as .drawio"
         >
           ↓ .drawio
         </button>
