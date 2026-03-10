@@ -76,7 +76,7 @@ export function AIPanel({ onLoad, onClose }: AIPanelProps) {
 
   return (
     <div style={{
-      position: "fixed", right: 16, bottom: 16, width: 340,
+      position: "fixed", right: 16, bottom: 44, width: 340,
       background: "#0f172a", border: "1px solid #1e3a2f", borderRadius: 12,
       boxShadow: "0 0 40px #00000088", display: "flex", flexDirection: "column",
       fontFamily: "'JetBrains Mono', monospace", zIndex: 100,
@@ -114,7 +114,7 @@ export function AIPanel({ onLoad, onClose }: AIPanelProps) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Опишите диаграмму..."
+          placeholder="Describe the diagram..."
           style={{
             flex: 1, background: "#1e293b", border: "1px solid #374151",
             borderRadius: 8, padding: "7px 10px", color: "#e5e7eb",
