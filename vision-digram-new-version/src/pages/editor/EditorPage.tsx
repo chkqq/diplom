@@ -229,7 +229,7 @@ export function EditorPage() {
         pendingType={pendingType}
       />
 
-      {showAI && <AIPanel onLoad={loadDiagram} onClose={() => setShowAI(false)} />}
+      {showAI && <AIPanel onClose={() => setShowAI(false)} />}
     </div>
   );
 }
