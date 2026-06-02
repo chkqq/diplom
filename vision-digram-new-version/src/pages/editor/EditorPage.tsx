@@ -1,15 +1,37 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { v4 as uuid } from "uuid";
 import type { ShapeType } from "../../shared/types/diagram";
 import type { ConnectState } from "../../features/connect-mode";
 
 import { useDiagramStore } from "../../shared/store/diagramStore";
 import { DEFAULT_TEXT_STYLE } from "../../shared/store/diagramStore";
+import type { Edge, Shape } from "../../shared/store/diagramStore";
 import { startConnect, cancelConnect, selectSource } from "../../features/connect-mode";
 import { exportToDrawio, importFromDrawio } from "../../features/export-diagram";
 import { AIPanel } from "../../features/ai-assistant";
 import { Toolbar } from "../../widgets/toolbar";
 import { DiagramCanvas } from "../../widgets/canvas";
 import { StatusBar } from "../../widgets/status-bar";
+import { useTheme } from "../../shared/theme";
+
+interface ClipboardPayload {
+  shapes: Shape[];
+  edges: Edge[];
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return true;
+  return target instanceof HTMLElement && target.isContentEditable;
+}
+
+function cloneShape(shape: Shape): Shape {
+  return {
+    ...shape,
+    items: [...shape.items],
+    cells: shape.cells.map((row) => [...row]),
+    textStyle: { ...shape.textStyle },
+  };
+}
 
 function defaultShapeProps(type: ShapeType) {
   const base = {
@@ -33,6 +55,7 @@ function defaultShapeProps(type: ShapeType) {
 }
 
 export function EditorPage() {
+  const theme = useTheme();
   const shapes      = useDiagramStore((s) => s.shapes);
   const edges       = useDiagramStore((s) => s.edges);
   const addShape    = useDiagramStore((s) => s.addShape);
@@ -60,6 +83,8 @@ export function EditorPage() {
 
   // Text format toolbar state
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const clipboardRef = useRef<ClipboardPayload | null>(null);
+  const pasteOffsetRef = useRef(1);
 
   const handleImport = useCallback(() => {
     fileInputRef.current?.click();
@@ -119,39 +144,112 @@ export function EditorPage() {
     }
   }, [selectedIds, selectedId, selectedEdgeId, removeShape, removeEdge]);
 
+  const handleCopy = useCallback(() => {
+    const idsToCopy = selectedIds.length > 0 ? selectedIds : selectedId ? [selectedId] : [];
+    if (idsToCopy.length === 0) return false;
+
+    const idSet = new Set(idsToCopy);
+    const copiedShapes = shapes.filter((shape) => idSet.has(shape.id)).map(cloneShape);
+    if (copiedShapes.length === 0) return false;
+
+    clipboardRef.current = {
+      shapes: copiedShapes,
+      edges: edges
+        .filter((edge) => idSet.has(edge.source) && idSet.has(edge.target))
+        .map((edge) => ({ ...edge })),
+    };
+    pasteOffsetRef.current = 1;
+    return true;
+  }, [edges, selectedId, selectedIds, shapes]);
+
+  const handlePaste = useCallback(() => {
+    const payload = clipboardRef.current;
+    if (!payload || payload.shapes.length === 0) return false;
+
+    const offset = pasteOffsetRef.current;
+    const idMap = new Map<string, string>();
+    const pastedShapes = payload.shapes.map((shape) => {
+      const nextId = uuid();
+      idMap.set(shape.id, nextId);
+      return {
+        ...cloneShape(shape),
+        id: nextId,
+        x: shape.x + offset,
+        y: shape.y + offset,
+      };
+    });
+
+    const pastedEdges = payload.edges
+      .map((edge) => {
+        const source = idMap.get(edge.source);
+        const target = idMap.get(edge.target);
+        if (!source || !target) return null;
+        return { ...edge, id: uuid(), source, target };
+      })
+      .filter((edge): edge is Edge => edge !== null);
+
+    loadDiagram([...shapes, ...pastedShapes], [...edges, ...pastedEdges]);
+    pasteOffsetRef.current += 1;
+
+    if (pastedShapes.length === 1) {
+      setSelectedId(pastedShapes[0].id);
+      setSelectedIds([]);
+    } else {
+      setSelectedId(null);
+      setSelectedIds(pastedShapes.map((shape) => shape.id));
+    }
+    setSelectedEdgeId(null);
+    setConnectFrom(null);
+    setPendingType(null);
+    return true;
+  }, [edges, loadDiagram, shapes]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setPendingType(null);
         setConnectFrom(null);
       }
-      if ((e.key === "Delete" || e.key === "Backspace") && !(e.target instanceof HTMLInputElement)) {
+      if ((e.key === "Delete" || e.key === "Backspace") && !isEditableTarget(e.target)) {
         handleDelete();
       }
-      if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
+
+      if (isEditableTarget(e.target)) return;
+
+      const commandKey = e.ctrlKey || e.metaKey;
+      if (commandKey && (e.code === "Equal" || e.key === "=" || e.key === "+")) {
         e.preventDefault();
         setZoom((z) => Math.min(4, +(z * 1.2).toFixed(3)));
       }
-      if (e.ctrlKey && e.key === "-") {
+      if (commandKey && (e.code === "Minus" || e.key === "-")) {
         e.preventDefault();
         setZoom((z) => Math.max(0.2, +(z / 1.2).toFixed(3)));
       }
-      if (e.ctrlKey && e.key === "0") {
+      if (commandKey && (e.code === "Digit0" || e.key === "0")) {
         e.preventDefault();
         setZoom(1);
         setPan({ x: 0, y: 0 });
       }
-      if (e.ctrlKey && e.shiftKey && e.key === "Z") {
+
+      if (commandKey && e.code === "KeyC" && handleCopy()) {
+        e.preventDefault();
+        return;
+      }
+      if (commandKey && e.code === "KeyV" && handlePaste()) {
+        e.preventDefault();
+        return;
+      }
+      if (commandKey && ((e.shiftKey && e.code === "KeyZ") || e.code === "KeyY")) {
         e.preventDefault();
         redo();
-      } else if (e.ctrlKey && !e.shiftKey && e.key === "z") {
+      } else if (commandKey && !e.shiftKey && e.code === "KeyZ") {
         e.preventDefault();
         undo();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleDelete, undo, redo]);
+  }, [handleCopy, handleDelete, handlePaste, undo, redo]);
 
   const handleToggleConnect = () => {
     setPendingType(null);
@@ -168,7 +266,7 @@ export function EditorPage() {
 
   return (
     <div style={{
-      width: "100vw", height: "100vh", background: "#030712",
+      width: "100vw", height: "100vh", background: theme.appBg, color: theme.text,
       display: "flex", flexDirection: "column", overflow: "hidden",
       fontFamily: "'JetBrains Mono', monospace",
     }}>

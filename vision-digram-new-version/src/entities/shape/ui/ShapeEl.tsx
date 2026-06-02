@@ -5,6 +5,7 @@ import { CELL } from "../../../shared/config/grid";
 import { ResizeHandles } from "../../../features/resize-shape/model/resizeHandles";
 import { RotateHandle } from "../../../features/rotate-shape/model/rotateHandle";
 import type { ResizeHandle } from "../../../features/resize-shape/model/resizeHandles";
+import { resolveThemeTextColor, useTheme } from "../../../shared/theme";
 
 interface ShapeElProps {
   shape: Shape;
@@ -29,6 +30,7 @@ export function ShapeEl({
   onMouseDown, onConnectClick, onLabelChange,
   onResize, onRotate, onEditStart, onEditEnd,
 }: ShapeElProps) {
+  const theme = useTheme();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(shape.text);
   const inputRef  = useRef<HTMLInputElement>(null);
@@ -100,9 +102,10 @@ export function ShapeEl({
     window.addEventListener("mouseup", onUp);
   };
 
-  const fill   = selected ? "#1a2e2a" : "#111827";
-  const stroke = selected ? "#6ee7b7" : "#374151";
-  const accent = selected ? "#6ee7b7" : connecting ? "#fbbf24" : "#4ade80";
+  const fill   = selected ? theme.shapeFillSelected : theme.shapeFill;
+  const stroke = selected ? theme.accentBright : theme.borderMuted;
+  const accent = selected ? theme.accentBright : connecting ? theme.warning : theme.accent;
+  const textColor = resolveThemeTextColor(ts.color, theme);
 
   const renderBody = () => {
     if (shape.type === "rectangle")
@@ -152,9 +155,9 @@ export function ShapeEl({
               }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                width: "100%", background: "#0a1a14",
-                border: "1px solid #10b981", borderRadius: 4, outline: "none",
-                color: ts.color, fontSize: ts.fontSize,
+                width: "100%", background: theme.inputBg,
+                border: `1px solid ${theme.accent}`, borderRadius: 4, outline: "none",
+                color: textColor, fontSize: ts.fontSize,
                 fontFamily: `'${ts.fontFamily}', monospace`,
                 fontWeight, fontStyle, textDecoration,
                 textAlign: ts.align === "justify" ? "left" : ts.align,
@@ -166,7 +169,7 @@ export function ShapeEl({
           <text
             x={labelX} y={cy + ts.fontSize * 0.35}
             textAnchor={textAnchor}
-            fill={ts.color} fontSize={ts.fontSize}
+            fill={textColor} fontSize={ts.fontSize}
             fontFamily={`'${ts.fontFamily}', monospace`}
             fontWeight={fontWeight} fontStyle={fontStyle} textDecoration={textDecoration}
             style={{ pointerEvents: "none", userSelect: "none" }}
@@ -177,8 +180,8 @@ export function ShapeEl({
 
         {connectMode && (
           <circle cx={px+pw} cy={cy} r={6}
-            fill={connecting ? "#fbbf24" : "#064e3b"}
-            stroke={connecting ? "#fbbf24" : "#10b981"}
+            fill={connecting ? theme.warning : theme.accentSoft}
+            stroke={connecting ? theme.warning : theme.accent}
             strokeWidth={1.5} style={{ cursor: "crosshair" }}
             onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
           />

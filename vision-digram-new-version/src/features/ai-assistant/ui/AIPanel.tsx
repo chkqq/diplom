@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { v4 as uuid } from "uuid";
-import { useDiagramStore } from "../../../shared/store/diagramStore";
+import { DEFAULT_TEXT_STYLE, useDiagramStore } from "../../../shared/store/diagramStore";
 import type { Shape, Edge } from "../../../shared/store/diagramStore";
 import type { ChatMessage } from "../model/chatModel";
 import { generateDiagram } from "../api/generateDiagram";
 import { userMessage, aiMessage } from "../model/chatModel";
 import type { ShapeType } from "../../../shared/types/diagram";
+import { useTheme } from "../../../shared/theme";
 
 interface AIPanelProps {
   onClose: () => void;
@@ -31,7 +32,7 @@ function normalizeShape(s: any): Shape {
     textStyle: {
       fontFamily: "JetBrains Mono", fontSize: 12, bold: false, italic: false,
       underline: false, strikethrough: false, align: "center",
-      color: "#d1fae5", lineHeight: 1.2,
+      color: DEFAULT_TEXT_STYLE.color, lineHeight: 1.2,
     },
   };
   if (type === "list") {
@@ -52,6 +53,7 @@ function normalizeShape(s: any): Shape {
 }
 
 export function AIPanel({ onClose }: AIPanelProps) {
+  const theme = useTheme();
   const shapes           = useDiagramStore((s) => s.shapes);
   const edges            = useDiagramStore((s) => s.edges);
   const loadDiagram      = useDiagramStore((s) => s.loadDiagram);
@@ -168,20 +170,20 @@ export function AIPanel({ onClose }: AIPanelProps) {
   return (
     <div style={{
       position: "fixed", right: 16, bottom: 44, width: 340,
-      background: "#0f172a", border: "1px solid #1e3a2f", borderRadius: 12,
-      boxShadow: "0 0 40px #00000088", display: "flex", flexDirection: "column",
+      background: theme.surfaceAlt, border: `1px solid ${theme.border}`, borderRadius: 12,
+      boxShadow: theme.panelShadow, display: "flex", flexDirection: "column",
       fontFamily: "'JetBrains Mono', monospace", zIndex: 100,
     }}>
       {/* Header */}
-      <div style={{ padding: "10px 14px", borderBottom: "1px solid #1e3a2f", display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981" }} />
-        <span style={{ color: "#6ee7b7", fontSize: 12, fontWeight: 700 }}>AI ASSISTANT · llama3.1</span>
-        <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 16 }}>✕</button>
+      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${theme.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: theme.accent, boxShadow: `0 0 6px ${theme.accentGlow}` }} />
+        <span style={{ color: theme.accentBright, fontSize: 12, fontWeight: 700 }}>AI ASSISTANT · llama3.1</span>
+        <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: theme.textSubtle, cursor: "pointer", fontSize: 16 }}>✕</button>
       </div>
 
       {/* Board context indicator */}
-      <div style={{ padding: "5px 14px", background: "#0a1628", borderBottom: "1px solid #1e3a2f" }}>
-        <span style={{ color: shapes.length > 0 ? "#10b981" : "#374151", fontSize: 10 }}>
+      <div style={{ padding: "5px 14px", background: theme.surface, borderBottom: `1px solid ${theme.border}` }}>
+        <span style={{ color: shapes.length > 0 ? theme.accentText : theme.textGhost, fontSize: 10 }}>
           ● {boardInfo} — AI can see and edit it
         </span>
       </div>
@@ -189,7 +191,7 @@ export function AIPanel({ onClose }: AIPanelProps) {
       {/* Messages */}
       <div style={{ flex: 1, maxHeight: 240, overflowY: "auto", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
         {history.length === 0 && (
-          <p style={{ color: "#374151", fontSize: 11, textAlign: "center", marginTop: 16 }}>
+          <p style={{ color: theme.textGhost, fontSize: 11, textAlign: "center", marginTop: 16 }}>
             {shapes.length > 0
               ? 'Board has content. Try "add a database node", "remove all rectangles", "what\'s on the board?"'
               : "Describe a diagram and AI will create it"}
@@ -198,33 +200,33 @@ export function AIPanel({ onClose }: AIPanelProps) {
         {history.map((m, i) => (
           <div key={i} style={{
             alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-            background: m.role === "user" ? "#064e3b" : "#1e293b",
-            color: m.role === "user" ? "#d1fae5" : "#94a3b8",
+            background: m.role === "user" ? theme.accentSoft : theme.surfaceRaised,
+            color: m.role === "user" ? theme.accentText : theme.textMuted,
             borderRadius: 8, padding: "6px 10px", fontSize: 11, maxWidth: "85%",
           }}>
             {m.text}
           </div>
         ))}
-        {loading && <div style={{ alignSelf: "flex-start", color: "#10b981", fontSize: 11 }}>⏳ Thinking...</div>}
+        {loading && <div style={{ alignSelf: "flex-start", color: theme.accentText, fontSize: 11 }}>⏳ Thinking...</div>}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div style={{ padding: "10px 14px", borderTop: "1px solid #1e3a2f", display: "flex", gap: 8 }}>
+      <div style={{ padding: "10px 14px", borderTop: `1px solid ${theme.border}`, display: "flex", gap: 8 }}>
         <input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !loading && send()}
           placeholder={shapes.length > 0 ? "Add, edit, remove, analyze..." : "Describe the diagram..."}
           style={{
-            flex: 1, background: "#1e293b", border: "1px solid #374151",
-            borderRadius: 8, padding: "7px 10px", color: "#e5e7eb",
+            flex: 1, background: theme.inputBg, border: `1px solid ${theme.borderMuted}`,
+            borderRadius: 8, padding: "7px 10px", color: theme.text,
             fontSize: 11, outline: "none", fontFamily: "inherit",
           }}
         />
         <button onClick={send} disabled={loading} style={{
-          background: loading ? "#064e3b" : "#10b981", border: "none",
-          borderRadius: 8, padding: "7px 12px", color: "#fff",
+          background: loading ? theme.accentSoft : theme.accent, border: "none",
+          borderRadius: 8, padding: "7px 12px", color: theme.onAccentText,
           cursor: loading ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 700,
         }}>→</button>
       </div>

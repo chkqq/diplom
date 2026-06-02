@@ -6,6 +6,7 @@ import { CELL, GRID_COLS, GRID_ROWS } from "../../../shared/config/grid";
 import { snapToGrid } from "../../../shared/lib";
 import { ShapeRenderer } from "../../../entities/shape";
 import { EdgeEl } from "../../../entities/edge";
+import { useTheme } from "../../../shared/theme";
 
 interface DiagramCanvasProps {
   shapes: Shape[];
@@ -44,6 +45,7 @@ export function DiagramCanvas({
   onConnectPort, onPanChange, onZoomChange, onCursorMove, onPlaceShape, onDeselect,
   onEditStart, onEditEnd, onUpdateEdge,
 }: DiagramCanvasProps) {
+  const theme = useTheme();
   const svgRef      = useRef<SVGSVGElement>(null);
   const panDragRef  = useRef({ active: false, startX: 0, startY: 0, panX: 0, panY: 0 });
   const dragRef     = useRef<{ id: string; offX: number; offY: number } | null>(null);
@@ -233,32 +235,32 @@ export function DiagramCanvas({
       >
         <defs>
           <pattern id="smallGrid" width={CELL} height={CELL} patternUnits="userSpaceOnUse">
-            <path d={`M ${CELL} 0 L 0 0 0 ${CELL}`} fill="none" stroke="#0f2318" strokeWidth={0.8} />
+            <path d={`M ${CELL} 0 L 0 0 0 ${CELL}`} fill="none" stroke={theme.canvasGridSmall} strokeWidth={0.8} />
           </pattern>
           <pattern id="grid" width={CELL * 4} height={CELL * 4} patternUnits="userSpaceOnUse">
             <rect width={CELL * 4} height={CELL * 4} fill="url(#smallGrid)" />
-            <path d={`M ${CELL * 4} 0 L 0 0 0 ${CELL * 4}`} fill="none" stroke="#122a1e" strokeWidth={1.2} />
+            <path d={`M ${CELL * 4} 0 L 0 0 0 ${CELL * 4}`} fill="none" stroke={theme.canvasGridLarge} strokeWidth={1.2} />
           </pattern>
           {/* filled end */}
           <marker id="arr-filled" markerWidth={10} markerHeight={7} refX={9} refY={3.5} orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+            <polygon points="0 0, 10 3.5, 0 7" fill={theme.edge} />
           </marker>
           <marker id="arr-filled-sel" markerWidth={10} markerHeight={7} refX={9} refY={3.5} orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b" />
+            <polygon points="0 0, 10 3.5, 0 7" fill={theme.edgeSelected} />
           </marker>
           {/* empty (hollow) end — fill with canvas bg so triangle looks hollow */}
           <marker id="arr-empty" markerWidth={10} markerHeight={7} refX={9} refY={3.5} orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#030712" stroke="#10b981" strokeWidth={1.5} />
+            <polygon points="0 0, 10 3.5, 0 7" fill={theme.canvasBg} stroke={theme.edge} strokeWidth={1.5} />
           </marker>
           <marker id="arr-empty-sel" markerWidth={10} markerHeight={7} refX={9} refY={3.5} orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#030712" stroke="#f59e0b" strokeWidth={1.5} />
+            <polygon points="0 0, 10 3.5, 0 7" fill={theme.canvasBg} stroke={theme.edgeSelected} strokeWidth={1.5} />
           </marker>
           {/* filled start (source / both) — refX=9 so tip aligns with shape boundary */}
           <marker id="arr-start" markerWidth={10} markerHeight={7} refX={9} refY={3.5} orient="auto-start-reverse">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+            <polygon points="0 0, 10 3.5, 0 7" fill={theme.edge} />
           </marker>
           <marker id="arr-start-sel" markerWidth={10} markerHeight={7} refX={9} refY={3.5} orient="auto-start-reverse">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b" />
+            <polygon points="0 0, 10 3.5, 0 7" fill={theme.edgeSelected} />
           </marker>
         </defs>
 
@@ -303,8 +305,8 @@ export function DiagramCanvas({
           {selBox && (
             <rect
               x={selBox.x} y={selBox.y} width={selBox.w} height={selBox.h}
-              fill="rgba(16,185,129,0.06)"
-              stroke="#10b981"
+              fill={theme.selectionFill}
+              stroke={theme.accent}
               strokeWidth={1 / zoom}
               strokeDasharray={`${4 / zoom},${3 / zoom}`}
               pointerEvents="none"
@@ -317,19 +319,19 @@ export function DiagramCanvas({
         <div style={{
           position: "absolute", top: "50%", left: "50%",
           transform: "translate(-50%, -50%)", textAlign: "center",
-          color: "#1f2937", pointerEvents: "none",
+          color: theme.textGhost, pointerEvents: "none",
           fontFamily: "'JetBrains Mono', monospace",
         }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>◈</div>
-          <div style={{ fontSize: 13, letterSpacing: 2 }}>ADD SHAPES OR USE AI TO GENERATE A DIAGRAM</div>
+          <div style={{ fontSize: 13, letterSpacing: 0 }}>ADD SHAPES OR USE AI TO GENERATE A DIAGRAM</div>
         </div>
       )}
 
       {connectFrom && connectFrom !== "pick" && (
         <div style={{
           position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
-          background: "#064e3b", border: "1px solid #10b981", borderRadius: 8,
-          padding: "6px 16px", color: "#10b981", fontSize: 12,
+          background: theme.accentSoft, border: `1px solid ${theme.accent}`, borderRadius: 8,
+          padding: "6px 16px", color: theme.accentText, fontSize: 12,
           fontFamily: "'JetBrains Mono', monospace", pointerEvents: "none",
         }}>
           Click the port (◯) on the target shape
@@ -351,10 +353,10 @@ export function DiagramCanvas({
           <div style={{
             position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)",
             display: "flex", gap: 4, alignItems: "center",
-            background: "#0a0f1a", border: "1px solid #1e3a2f", borderRadius: 8,
+            background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 8,
             padding: "4px 10px", zIndex: 20,
           }}>
-            <span style={{ color: "#4b5563", fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginRight: 4 }}>
+            <span style={{ color: theme.textSubtle, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginRight: 4 }}>
               arrow
             </span>
             {ARROW_TYPES.map(({ type, label, title }) => {
@@ -365,10 +367,10 @@ export function DiagramCanvas({
                   title={title}
                   onClick={() => onUpdateEdge(selectedEdgeId, { arrowType: type })}
                   style={{
-                    background: active ? "#064e3b" : "transparent",
-                    border: `1px solid ${active ? "#10b981" : "#374151"}`,
+                    background: active ? theme.accentSoft : "transparent",
+                    border: `1px solid ${active ? theme.accent : theme.borderMuted}`,
                     borderRadius: 4,
-                    color: active ? "#10b981" : "#6b7280",
+                    color: active ? theme.accentText : theme.textSubtle,
                     padding: "2px 10px",
                     cursor: "pointer",
                     fontSize: 14,

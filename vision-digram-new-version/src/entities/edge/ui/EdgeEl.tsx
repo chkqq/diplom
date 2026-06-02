@@ -1,5 +1,6 @@
 import type { Edge, Shape } from "../../../shared/store/diagramStore";
 import { buildEdgePath } from "../../../shared/lib";
+import { useTheme } from "../../../shared/theme";
 
 interface EdgeElProps {
   edge: Edge;
@@ -20,6 +21,7 @@ function markers(arrowType: Edge["arrowType"], selected: boolean) {
 }
 
 export function EdgeEl({ edge, shapes, selected = false, onClick }: EdgeElProps) {
+  const theme = useTheme();
   const a = shapes.find((s) => s.id === edge.source);
   const b = shapes.find((s) => s.id === edge.target);
   if (!a || !b) return null;
@@ -32,7 +34,7 @@ export function EdgeEl({ edge, shapes, selected = false, onClick }: EdgeElProps)
       <path d={d} stroke="transparent" strokeWidth={12} fill="none" />
       <path
         d={d}
-        stroke={selected ? "#f59e0b" : "#10b981"}
+        stroke={selected ? theme.edgeSelected : theme.edge}
         strokeWidth={selected ? 2 : 1.5}
         fill="none"
         markerEnd={end}

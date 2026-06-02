@@ -4,6 +4,7 @@ import { CELL } from "../../../shared/config/grid";
 import { ResizeHandles } from "../../../features/resize-shape/model/resizeHandles";
 import { RotateHandle } from "../../../features/rotate-shape/model/rotateHandle";
 import type { ResizeHandle } from "../../../features/resize-shape/model/resizeHandles";
+import { useTheme } from "../../../shared/theme";
 
 interface TableElProps {
   shape: Shape;
@@ -28,6 +29,7 @@ export function TableEl({
   onMouseDown, onConnectClick, onUpdate,
   onResize, onRotate, onEditStart,
 }: TableElProps) {
+  const theme = useTheme();
   const rows  = shape.rows  ?? 3;
   const cols  = shape.cols  ?? 3;
   const cells = shape.cells ?? Array.from({ length: rows }, (_, r) =>
@@ -46,8 +48,8 @@ export function TableEl({
   const cy = py + ph / 2;
   const rotation = shape.rotation ?? 0;
 
-  const stroke = selected ? "#6ee7b7" : "#374151";
-  const accent = selected ? "#6ee7b7" : "#4ade80";
+  const stroke = selected ? theme.accentBright : theme.borderMuted;
+  const accent = selected ? theme.accentBright : theme.accent;
 
   const cellW = pw / cols;
   const cellH = ph / rows;
@@ -144,7 +146,7 @@ export function TableEl({
     <g transform={`rotate(${rotation}, ${cx}, ${cy})`}>
       <g onMouseDown={onMouseDown} style={{ cursor: "move" }}>
         {/* Outer border */}
-        <rect x={px} y={py} width={pw} height={ph} fill="#111827" stroke={stroke} strokeWidth={1.5} rx={4} />
+        <rect x={px} y={py} width={pw} height={ph} fill={theme.shapeFill} stroke={stroke} strokeWidth={1.5} rx={4} />
 
         {/* Grid lines */}
         {Array.from({ length: rows }).map((_, r) =>
@@ -156,8 +158,8 @@ export function TableEl({
             return (
               <g key={`${r}-${c}`}>
                 <rect x={fx} y={fy} width={cellW} height={cellH}
-                  fill={r === 0 ? "#0f2a1e" : "#111827"}
-                  stroke="#1f2937" strokeWidth={0.8}
+                  fill={r === 0 ? theme.shapeHeader : theme.shapeFill}
+                  stroke={theme.separator} strokeWidth={0.8}
                   onDoubleClick={(e) => startEdit(r, c, cellVal, e)}
                 />
                 {isEditing ? (
@@ -169,14 +171,14 @@ export function TableEl({
                       onBlur={commitEdit}
                       onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Tab") { e.preventDefault(); commitEdit(); } e.stopPropagation(); }}
                       onClick={(e) => e.stopPropagation()}
-                      style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#d1fae5", fontSize: 11, fontFamily: "'JetBrains Mono', monospace", padding: 0, textAlign: "center" }}
+                      style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: theme.shapeText, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", padding: 0, textAlign: "center" }}
                     />
                   </foreignObject>
                 ) : (
                   <text
                     x={fx + cellW / 2} y={fy + cellH / 2 + 4}
                     textAnchor="middle"
-                    fill={r === 0 ? "#6ee7b7" : "#9ca3af"}
+                    fill={r === 0 ? theme.accentBright : theme.shapeTextMuted}
                     fontSize={11}
                     fontFamily="'JetBrains Mono', monospace"
                     style={{ pointerEvents: "none", userSelect: "none" }}
@@ -195,15 +197,15 @@ export function TableEl({
           <>
             {/* Add/remove row */}
             <g>
-              <text x={px + pw + 6} y={py + 14} fill="#10b981" fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={addRow}>+</text>
-              <text x={px + pw + 6} y={py + 30} fill="#f87171" fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={removeRow}>−</text>
-              <text x={px + pw + 4} y={py + 44} fill="#6b7280" fontSize={9} style={{ userSelect: "none" }}>row</text>
+              <text x={px + pw + 6} y={py + 14} fill={theme.accentText} fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={addRow}>+</text>
+              <text x={px + pw + 6} y={py + 30} fill={theme.danger} fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={removeRow}>−</text>
+              <text x={px + pw + 4} y={py + 44} fill={theme.textSubtle} fontSize={9} style={{ userSelect: "none" }}>row</text>
             </g>
             {/* Add/remove col */}
             <g>
-              <text x={px + 8}  y={py + ph + 16} fill="#10b981" fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={addCol}>+</text>
-              <text x={px + 22} y={py + ph + 16} fill="#f87171" fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={removeCol}>−</text>
-              <text x={px + 36} y={py + ph + 16} fill="#6b7280" fontSize={9}  style={{ userSelect: "none" }}>col</text>
+              <text x={px + 8}  y={py + ph + 16} fill={theme.accentText} fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={addCol}>+</text>
+              <text x={px + 22} y={py + ph + 16} fill={theme.danger} fontSize={14} style={{ cursor: "pointer", userSelect: "none" }} onClick={removeCol}>−</text>
+              <text x={px + 36} y={py + ph + 16} fill={theme.textSubtle} fontSize={9}  style={{ userSelect: "none" }}>col</text>
             </g>
           </>
         )}
@@ -211,8 +213,8 @@ export function TableEl({
         {/* Connect port — только в режиме connect */}
         {connectMode && (
           <circle cx={px + pw} cy={cy} r={6}
-            fill={connecting ? "#fbbf24" : "#064e3b"}
-            stroke={connecting ? "#fbbf24" : "#10b981"}
+            fill={connecting ? theme.warning : theme.accentSoft}
+            stroke={connecting ? theme.warning : theme.accent}
             strokeWidth={1.5} style={{ cursor: "crosshair" }}
             onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
           />

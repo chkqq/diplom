@@ -1,5 +1,6 @@
 import { CELL } from "../../../shared/config/grid";
 import type { Shape } from "../../../shared/store/diagramStore";
+import { useTheme } from "../../../shared/theme";
 
 export type ResizeHandle =
   | "n" | "s" | "e" | "w"
@@ -13,6 +14,7 @@ interface ResizeHandlesProps {
 const HANDLE_SIZE = 8;
 
 export function ResizeHandles({ shape, onResizeStart }: ResizeHandlesProps) {
+  const theme = useTheme();
   const px = shape.x * CELL;
   const py = shape.y * CELL;
   const pw = shape.w * CELL;
@@ -42,8 +44,8 @@ export function ResizeHandles({ shape, onResizeStart }: ResizeHandlesProps) {
           width={HANDLE_SIZE}
           height={HANDLE_SIZE}
           rx={2}
-          fill="#0f172a"
-          stroke="#6ee7b7"
+          fill={theme.handleFill}
+          stroke={theme.accentBright}
           strokeWidth={1.5}
           style={{ cursor: h.cursor }}
           onMouseDown={(e) => { e.stopPropagation(); onResizeStart(e, h.id); }}

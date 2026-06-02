@@ -1,5 +1,6 @@
 import { CELL } from "../../../shared/config/grid";
 import type { Shape } from "../../../shared/store/diagramStore";
+import { useTheme } from "../../../shared/theme";
 
 interface RotateHandleProps {
   shape: Shape;
@@ -7,6 +8,7 @@ interface RotateHandleProps {
 }
 
 export function RotateHandle({ shape, onRotateStart }: RotateHandleProps) {
+  const theme = useTheme();
   const px = shape.x * CELL;
   const py = shape.y * CELL;
   const pw = shape.w * CELL;
@@ -19,14 +21,14 @@ export function RotateHandle({ shape, onRotateStart }: RotateHandleProps) {
       <line
         x1={cx} y1={py - 2}
         x2={cx} y2={topY + 6}
-        stroke="#6ee7b7" strokeWidth={1} strokeDasharray="3 2" opacity={0.6}
+        stroke={theme.accentBright} strokeWidth={1} strokeDasharray="3 2" opacity={0.6}
       />
       {/* Rotate circle */}
       <circle
         cx={cx} cy={topY}
         r={7}
-        fill="#0f172a"
-        stroke="#6ee7b7"
+        fill={theme.handleFill}
+        stroke={theme.accentBright}
         strokeWidth={1.5}
         style={{ cursor: "grab" }}
         onMouseDown={(e) => { e.stopPropagation(); onRotateStart(e); }}
@@ -36,7 +38,7 @@ export function RotateHandle({ shape, onRotateStart }: RotateHandleProps) {
         x={cx} y={topY + 4}
         textAnchor="middle"
         fontSize={9}
-        fill="#6ee7b7"
+        fill={theme.accentBright}
         style={{ pointerEvents: "none", userSelect: "none" }}
       >↻</text>
     </g>

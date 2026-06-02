@@ -4,6 +4,7 @@ import { CELL } from "../../../shared/config/grid";
 import { ResizeHandles } from "../../../features/resize-shape/model/resizeHandles";
 import { RotateHandle } from "../../../features/rotate-shape/model/rotateHandle";
 import type { ResizeHandle } from "../../../features/resize-shape/model/resizeHandles";
+import { useTheme } from "../../../shared/theme";
 
 interface ListElProps {
   shape: Shape;
@@ -31,6 +32,7 @@ export function ListEl({
   onMouseDown, onConnectClick, onUpdate,
   onResize, onRotate, onEditStart,
 }: ListElProps) {
+  const theme = useTheme();
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,8 +49,8 @@ export function ListEl({
   const rotation = shape.rotation ?? 0;
   const clipId = `list-clip-${shape.id}`;
 
-  const stroke = selected ? "#6ee7b7" : "#374151";
-  const accent = selected ? "#6ee7b7" : connecting ? "#fbbf24" : "#4ade80";
+  const stroke = selected ? theme.accentBright : theme.borderMuted;
+  const accent = selected ? theme.accentBright : connecting ? theme.warning : theme.accent;
 
   const startEdit = (idx: number, current: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -151,17 +153,17 @@ export function ListEl({
       <g onMouseDown={onMouseDown} style={{ cursor: "move" }}>
         {/* Outer border */}
         <rect x={px} y={py} width={pw} height={ph} rx={6}
-          fill="#111827" stroke={stroke} strokeWidth={1.5} />
+          fill={theme.shapeFill} stroke={stroke} strokeWidth={1.5} />
 
         {/* All inner content clipped to box */}
         <g clipPath={`url(#${clipId})`}>
           {/* Header bg */}
-          <rect x={px} y={py} width={pw} height={HEADER_H} fill="#0f2a1e" />
+          <rect x={px} y={py} width={pw} height={HEADER_H} fill={theme.shapeHeader} />
           <line x1={px} y1={py + HEADER_H} x2={px + pw} y2={py + HEADER_H}
-            stroke="#374151" strokeWidth={1} />
+            stroke={theme.borderMuted} strokeWidth={1} />
 
           {/* Header icon */}
-          <text x={px + 10} y={py + 18} fill="#10b981" fontSize={11}
+          <text x={px + 10} y={py + 18} fill={theme.accentText} fontSize={11}
             fontFamily="'JetBrains Mono', monospace"
             style={{ pointerEvents: "none", userSelect: "none" }}>☰</text>
 
@@ -173,11 +175,11 @@ export function ListEl({
                 onBlur={commitEdit}
                 onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); e.stopPropagation(); }}
                 onClick={(e) => e.stopPropagation()}
-                style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#d1fae5", fontSize: 12, fontFamily: "'JetBrains Mono', monospace", padding: 0 }}
+                style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: theme.shapeText, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", padding: 0 }}
               />
             </foreignObject>
           ) : (
-            <text x={px + 26} y={py + 18} fill="#d1fae5" fontSize={12}
+            <text x={px + 26} y={py + 18} fill={theme.shapeText} fontSize={12}
               fontFamily="'JetBrains Mono', monospace"
               style={{ userSelect: "none" }}
               onDoubleClick={(e) => startEdit(-1, shape.text, e)}
@@ -189,7 +191,7 @@ export function ListEl({
             const ry = py + HEADER_H + i * ROW_H;
             return (
               <g key={i}>
-                <line x1={px} y1={ry} x2={px + pw} y2={ry} stroke="#1f2937" strokeWidth={1} />
+                <line x1={px} y1={ry} x2={px + pw} y2={ry} stroke={theme.separator} strokeWidth={1} />
                 {editingIdx === i ? (
                   <foreignObject x={px + 8} y={ry + 6} width={pw - 36} height={20}>
                     <input ref={inputRef} value={draft}
@@ -197,18 +199,18 @@ export function ListEl({
                       onBlur={commitEdit}
                       onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); e.stopPropagation(); }}
                       onClick={(e) => e.stopPropagation()}
-                      style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#d1fae5", fontSize: 12, fontFamily: "'JetBrains Mono', monospace", padding: 0 }}
+                      style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: theme.shapeText, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", padding: 0 }}
                     />
                   </foreignObject>
                 ) : (
-                  <text x={px + 8} y={ry + 18} fill="#9ca3af" fontSize={12}
+                  <text x={px + 8} y={ry + 18} fill={theme.shapeTextMuted} fontSize={12}
                     fontFamily="'JetBrains Mono', monospace"
                     style={{ userSelect: "none" }}
                     onDoubleClick={(e) => startEdit(i, item, e)}
                   >{item}</text>
                 )}
                 {selected && (
-                  <text x={px + pw - 16} y={ry + 18} fill="#4b5563" fontSize={11}
+                  <text x={px + pw - 16} y={ry + 18} fill={theme.textSubtle} fontSize={11}
                     style={{ cursor: "pointer", userSelect: "none" }}
                     onClick={(e) => removeItem(i, e)}
                   >✕</text>
@@ -222,9 +224,9 @@ export function ListEl({
             const addY = py + HEADER_H + items.length * ROW_H;
             return (
               <g>
-                <line x1={px} y1={addY} x2={px + pw} y2={addY} stroke="#1f2937" strokeWidth={1} />
+                <line x1={px} y1={addY} x2={px + pw} y2={addY} stroke={theme.separator} strokeWidth={1} />
                 <text x={cx} y={addY + 18} textAnchor="middle"
-                  fill="#10b981" fontSize={11}
+                  fill={theme.accentText} fontSize={11}
                   fontFamily="'JetBrains Mono', monospace"
                   style={{ cursor: "pointer", userSelect: "none" }}
                   onClick={addItem}
@@ -237,8 +239,8 @@ export function ListEl({
         {/* Connect port — только в режиме connect */}
         {connectMode && (
           <circle cx={px + pw} cy={cy} r={6}
-            fill={connecting ? "#fbbf24" : "#064e3b"}
-            stroke={connecting ? "#fbbf24" : "#10b981"}
+            fill={connecting ? theme.warning : theme.accentSoft}
+            stroke={connecting ? theme.warning : theme.accent}
             strokeWidth={1.5} style={{ cursor: "crosshair" }}
             onClick={(e) => { e.stopPropagation(); onConnectClick(e); }}
           />
